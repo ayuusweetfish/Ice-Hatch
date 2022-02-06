@@ -20,9 +20,11 @@ globalScale = math.min(wDev / W, hDev / H)
 --love.graphics.setFont(_G['font_Mali'])
 
 local sceneIntro = require 'scene_intro'
+local sceneGame = require 'scene_game'
 _G['sceneIntro'] = sceneIntro
+_G['sceneGame'] = sceneGame
 
-local curScene = sceneIntro()
+local curScene = sceneGame()
 local lastScene = nil
 local transitionTimer = 0
 local currentTransition = nil
@@ -59,7 +61,7 @@ local timeStep = 1 / 240
 function love.update(dt)
   T = T + dt
   local count = 0
-  while T > timeStep do
+  while T > timeStep and count < 4 do
     T = T - timeStep
     count = count + 1
     if lastScene ~= nil then
