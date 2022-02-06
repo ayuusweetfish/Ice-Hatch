@@ -55,17 +55,34 @@ return function (W, H)
     return o
   end
 
+  b.imp = function (o, vx, vy)
+    o.body:setLinearVelocity(vx, vy)
+    o.body:setAngle(math.atan2(vy, vx))
+    o.body:setAngularVelocity(0)
+  end
+
   b.step = function ()
     world:update(1/240)
   end
 
   b.eachActor = function (fn)
+    local remove = nil
     for i = 1, #actors do
       local o = actors[i]
       local x, y = o.body:getPosition()
       local w = o.body:getAngle()
       local vx, vy = o.body:getLinearVelocity()
-      fn(o, o.r, x, y, w, vx, vy)
+      if fn(o, o.r, x, y, w, vx, vy) then
+        if remove == nil then remove = {} end
+        remove[#remove + 1] = i
+      end
+    end
+    if remove ~= nil then
+      for i = #remove, 1, -1 do
+        actors[remove[i]].body:destroy()
+        actors[remove[i]] = actors[#actors]
+        actors[#actors] = nil
+      end
     end
   end
 
