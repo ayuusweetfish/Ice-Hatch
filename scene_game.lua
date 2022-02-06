@@ -123,6 +123,7 @@ return function ()
   end
 
   s.destroy = function ()
+    world:destroy()
   end
 
   return s
