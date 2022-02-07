@@ -298,14 +298,14 @@ return function ()
       love.graphics.setColor(1, 1, 1)
       for j = 1, #falls do
         local angle = startAngle + j / #falls * math.pi * 2 + t0 * 0.3
-        local dx = cos(angle) * h.r * 0.7
-        local dy = sin(angle) * h.r * 0.7
+        local dx = cos(angle) * h.r * (0.5 + #falls * 0.04)
+        local dy = sin(angle) * h.r * (0.5 + #falls * 0.04)
         dy = dy + (1 + sin(t0 * 2 + j * 0.7)) * 3
         drawUtils.img(
           falls[j] == 0 and 'penguin_head_young' or 'penguin_head_adult',
           board_ox + h.x + dx,
           board_oy + h.y + dy,
-          0.5, 0.7
+          0.6, 0.6
         )
       end
     end
