@@ -170,7 +170,7 @@ return function ()
               holes[#holes + 1] = {
                 x = x, y = y, r = r,
                 created = T,
-                count = 1,
+                falls = {},
               }
               -- Will fall into the hole in the following check
             end
@@ -183,7 +183,9 @@ return function ()
           local h = holes[i]
           if (x - h.x)^2 + (y - h.y)^2 < h.r^2 then
             -- Fallen!
-            h.count = h.count + 1
+            h.falls[#h.falls + 1] = (r == CHILD_R and 0 or 1)
+            if #h.falls > 5 then table.remove(h.falls, 1) end
+            h.lastFall = T
             -- This may happen if the object is held before cooldown runs out
             if selObj == o then selObj = nil end
             return true
@@ -273,14 +275,14 @@ return function ()
       drawUtils.img(
         h.r == CHILD_R and 'hole_small' or 'hole_large',
         board_ox + h.x, board_oy + h.y)
-      local t = T - h.created
+      local t = T - h.lastFall
       if t <= 180 then
         t = t / 180
         love.graphics.setColor(0.4, 0.6, 0.8)
         for j = 1, 5 do
-          local vx = love.math.noise(h.x, h.y, j * 12.34)
-          local ht = love.math.noise(h.x, h.y, j * 56.789)
-          vx = vx * 360 - 180
+          local vx = love.math.noise(h.x, h.y, h.lastFall / 240.05, j * 12.34)
+          local ht = love.math.noise(h.x, h.y, j * 56.789, h.lastFall / 240.05)
+          vx = vx * vx * 150
           ht = ht * 200 + 200
           if (j <= 3) == (h.x % 1 < 0.5) then vx = -vx end
           love.graphics.circle('fill',
@@ -289,6 +291,22 @@ return function ()
             10 * (1 - t)
           )
         end
+      end
+      local falls = h.falls
+      local startAngle = love.math.noise(h.created / 240.05) + #falls
+      local t0 = (T - h.created) / 240
+      love.graphics.setColor(1, 1, 1)
+      for j = 1, #falls do
+        local angle = startAngle + j / #falls * math.pi * 2 + t0 * 0.3
+        local dx = cos(angle) * h.r * 0.7
+        local dy = sin(angle) * h.r * 0.7
+        dy = dy + (1 + sin(t0 * 2 + j * 0.7)) * 3
+        drawUtils.img(
+          falls[j] == 0 and 'penguin_head_young' or 'penguin_head_adult',
+          board_ox + h.x + dx,
+          board_oy + h.y + dy,
+          0.5, 0.7
+        )
       end
     end
     -- Obstacles
