@@ -18,6 +18,8 @@ return function ()
   local EGG_SPAWN_DUR_VAR = 240
   local EGG_R = 10
   local EGG_HOLE_AVOID = 20
+  local IMP_MAX = 160
+  local IMP_CD = 240
 
   local phys = boardPhys(boardW, boardH)
 
@@ -50,7 +52,6 @@ return function ()
       if yi < -yRange then yi = yi - (yi + yRange) / 2 end
       if yi >  yRange then yi = yi - (yi - yRange) / 2 end
       objPos[i].x, objPos[i].y = xi, yi
-      print(i, xi, yi)
     end
   end
   for i = 1, 3 do
@@ -67,6 +68,7 @@ return function ()
   local eggs = {}
 
   local nextEgg = EGG_SPAWN_DUR_MIN / 2
+  local impCooldown = 0
 
   local board_ox = W / 2
   local board_oy = H / 2
@@ -74,6 +76,13 @@ return function ()
   local selObj = nil
   local selX, selY
   local dragX, dragY
+
+  -- Scale ranges outside the board
+  local boardPtScale = function (x, halfW)
+    if x < -halfW then return x + (x + halfW) * 2 end
+    if x >  halfW then return x + (x - halfW) * 2 end
+    return x
+  end
 
   s.press = function (x, y)
     selObj = nil
@@ -87,29 +96,39 @@ return function ()
       end
     end)
     if selObj ~= nil then
-      selX, selY = x, y
+      selX = boardPtScale(x - board_ox, boardW / 2)
+      selY = boardPtScale(y - board_oy, boardH / 2)
       dragX, dragY = 0, 0
     end
   end
 
   s.move = function (x, y)
     if selObj ~= nil then
-      dragX = x - selX
-      dragY = y - selY
+      dragX = boardPtScale(x - board_ox, boardW / 2) - selX
+      dragY = boardPtScale(y - board_oy, boardH / 2) - selY
+      -- Limit amplitude
+      local ampsq = dragX^2 + dragY^2
+      if ampsq > IMP_MAX^2 then
+        local scale = IMP_MAX / ampsq^0.5
+        dragX = dragX * scale
+        dragY = dragY * scale
+      end
     end
   end
 
   s.release = function (x, y)
-    if selObj ~= nil then
+    if selObj ~= nil and impCooldown == 0 then
       local scale = -3
-      phys.imp(selObj, (x - selX) * scale, (y - selY) * scale)
-      selObj = nil
+      phys.imp(selObj, dragX * scale, dragY * scale)
+      impCooldown = IMP_CD
     end
+    selObj = nil
   end
 
   s.update = function ()
-    if selObj == nil then
+    if selObj == nil or impCooldown > 0 then
       T = T + 1
+      if impCooldown > 0 then impCooldown = impCooldown - 1 end
       -- Spawn an egg?
       if T == nextEgg then
         nextEgg = nextEgg + EGG_SPAWN_DUR_MIN + love.math.random(EGG_SPAWN_DUR_VAR)
@@ -229,6 +248,7 @@ return function ()
 
   s.draw = function ()
     love.graphics.setColor(0, 0, 0)
+    love.graphics.print(tostring(impCooldown), 20, 20)
     love.graphics.rectangle('line',
       board_ox - boardW / 2,
       board_oy - boardH / 2,
@@ -249,7 +269,7 @@ return function ()
     end
     love.graphics.setColor(0, 0, 0)
     phys.eachActor(function (o, r, x, y, w, vx, vy)
-      if o == selObj then
+      if o == selObj and impCooldown == 0 then
         love.graphics.line(
           board_ox + x, board_oy + y,
           board_ox + x - dragX * 1,
