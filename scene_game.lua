@@ -184,7 +184,8 @@ return function ()
           if (x - h.x)^2 + (y - h.y)^2 < h.r^2 then
             -- Fallen!
             h.falls[#h.falls + 1] = (r == CHILD_R and 0 or 1)
-            if #h.falls > 5 then table.remove(h.falls, 1) end
+            local limit = (h.r == CHILD_R and 3 or 5)
+            if #h.falls > limit then table.remove(h.falls, 1) end
             h.lastFall = T
             -- This may happen if the object is held before cooldown runs out
             if selObj == o then selObj = nil end
