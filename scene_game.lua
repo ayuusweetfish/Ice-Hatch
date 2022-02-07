@@ -265,6 +265,7 @@ return function ()
     love.graphics.clear(0.95, 0.98, 1)
     love.graphics.setColor(0, 0, 0)
     love.graphics.print(tostring(impCooldown), 20, 20)
+    love.graphics.setLineWidth(1)
     love.graphics.rectangle('line',
       board_ox - boardW / 2,
       board_oy - boardH / 2,
@@ -358,27 +359,52 @@ return function ()
         (o.growth ~= nil) and 'penguin_young' or 'penguin_adult',
         board_ox + x, board_oy + y,
         0.5, 0.6, w + math.pi / 2)
+      -- Drag indicator
       if o == selObj and impCooldown == 0 then
-        love.graphics.line(
-          board_ox + x, board_oy + y,
-          board_ox + x - dragX * 1,
-          board_oy + y - dragY * 1)
-      end
-    --[[
-      love.graphics.circle('line', board_ox + x, board_oy + y, r)
-      love.graphics.line(
-        board_ox + x, board_oy + y,
-        board_ox + x + r * cos(w),
-        board_oy + y + r * sin(w))
-    --]]
-      love.graphics.setColor(0, 0, 0)
-      local s = ''
-      for k, v in pairs(o) do
-        if k == 'stopTimer' or k == 'holdEgg' or k == 'growth' then
-          s = s .. k .. ' = ' .. tostring(v) .. '\n'
+        love.graphics.setColor(0.5, 0.7, 0.4)
+        love.graphics.setLineWidth(6)
+        local px = board_ox + x - dragX * 1
+        local py = board_oy + y - dragY * 1
+        love.graphics.line(board_ox + x, board_oy + y, px, py)
+        local angle = math.pi * 0.2
+        local dragLenSq = dragX^2 + dragY^2
+        local dragXUnit, dragYUnit = 1, 0
+        if dragLenSq >= 1e-5 then
+          local dragLen = dragLenSq^0.5
+          local arrowheadLen = (dragLen < 20 and dragLen or 20)
+          dragXUnit = dragX / dragLen * arrowheadLen
+          dragYUnit = dragY / dragLen * arrowheadLen
         end
+        love.graphics.line(
+          px + dragXUnit * cos(angle) - dragYUnit * sin(angle),
+          py + dragXUnit * sin(angle) + dragYUnit * cos(angle),
+          px, py,
+          px + dragXUnit * cos(angle) + dragYUnit * sin(angle),
+          py - dragXUnit * sin(angle) + dragYUnit * cos(angle)
+        )
       end
-      love.graphics.print(s, board_ox + x, board_oy + y)
+      -- Stop timer indicator
+      if o.stopTimer ~= nil then
+        local rate = o.stopTimer / BREAK_DUR
+        local r, g, b = 0.8, 0.9, 1
+        if rate >= 0.5 then
+          local t = (rate - 0.5) * 2
+          r = r + t * (1.0 - r)
+          g = g + t * (0.7 - g)
+          b = b + t * (0.4 - b)
+        end
+        love.graphics.setColor(r, g, b, 0.6)
+        love.graphics.arc('fill',
+          board_ox + x, board_oy + y,
+          24, -math.pi * 0.5, math.pi * (-0.5 + 2 * rate), 24)
+        local alpha = 1
+        if rate < 0.05 then alpha = (rate / 0.05)^4 end
+        love.graphics.setColor(r, g, b, alpha)
+        love.graphics.setLineWidth(2)
+        love.graphics.arc('line',
+          board_ox + x, board_oy + y,
+          24, -math.pi * 0.5, math.pi * (-0.5 + 2 * rate), 24)
+      end
     end)
     -- Puff animations
     local i = 1
