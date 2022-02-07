@@ -102,5 +102,16 @@ return function (W, H)
     end
   end
 
+  b.queryPoint = function (x, y)
+    local found = false
+    world:queryBoundingBox(x, y, x, y, function (fixt)
+      if fixt:testPoint(x, y) then
+        found = true
+        return false
+      end
+    end)
+    return found
+  end
+
   return b
 end

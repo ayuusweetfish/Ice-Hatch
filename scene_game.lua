@@ -14,6 +14,10 @@ return function ()
   local BREAK_DUR = 480
   local HATCH_DUR = 480
   local GROW_DUR = 480
+  local EGG_SPAWN_DUR_MIN = 720
+  local EGG_SPAWN_DUR_VAR = 240
+  local EGG_R = 10
+  local EGG_HOLE_AVOID = 20
 
   local phys = boardPhys(boardW, boardH)
   phys.addActor(30, 0, 0, 100, 50, 0, -3)
@@ -24,8 +28,7 @@ return function ()
   local holes = {}
   local eggs = {}
 
-  eggs[#eggs + 1] = {x = 50, y = -200, r = 10}
-  eggs[#eggs + 1] = {x = -200, y = -200, r = 10}
+  local nextEgg = EGG_SPAWN_DUR_MIN / 2
 
   local board_ox = W / 2
   local board_oy = H / 2
@@ -69,6 +72,31 @@ return function ()
   s.update = function ()
     if selObj == nil then
       T = T + 1
+      -- Spawn an egg?
+      if T == nextEgg then
+        nextEgg = nextEgg + EGG_SPAWN_DUR_MIN + math.random(EGG_SPAWN_DUR_VAR)
+        -- Pick a position for the egg
+        local x, y
+        local attempts = 0
+        repeat
+          x = -boardW / 2 + ADULT_R + math.random() * (boardW - ADULT_R * 2)
+          y = -boardH / 2 + ADULT_R + math.random() * (boardH - ADULT_R * 2)
+          local valid = not phys.queryPoint(x, y)
+          -- Is in hole?
+          if valid then
+            for i = 1, #holes do
+              local h = holes[i]
+              if (x - h.x)^2 + (y - h.y)^2 < (h.r + EGG_R + EGG_HOLE_AVOID)^2 then
+                valid = false
+                break
+              end
+            end
+          end
+        until valid or attempts > 100
+        if attempts <= 100 then
+          eggs[#eggs + 1] = {x = x, y = y}
+        end
+      end
       phys.step()
       phys.eachActor(function (o, r, x, y, w, vx, vy)
         -- Self is stopped?
@@ -142,7 +170,7 @@ return function ()
         if o.growth == nil and o.holdEgg == nil then
           for i = 1, #eggs do
             local e = eggs[i]
-            if (x - e.x)^2 + (y - e.y)^2 < (r + e.r)^2 then
+            if (x - e.x)^2 + (y - e.y)^2 < (r + EGG_R)^2 then
               -- Remove egg
               eggs[i] = eggs[#eggs]
               eggs[#eggs] = nil
@@ -174,7 +202,7 @@ return function ()
     for i = 1, #eggs do
       local e = eggs[i]
       love.graphics.setColor(0.9, 0.8, 0.7)
-      love.graphics.circle('fill', board_ox + e.x, board_oy + e.y, e.r)
+      love.graphics.circle('fill', board_ox + e.x, board_oy + e.y, EGG_R)
     end
     love.graphics.setColor(0, 0, 0)
     phys.eachActor(function (o, r, x, y, w, vx, vy)
