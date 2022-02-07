@@ -275,23 +275,11 @@ return function ()
       drawUtils.img(
         h.r == CHILD_R and 'hole_small' or 'hole_large',
         board_ox + h.x, board_oy + h.y)
+    end
+    for i = 1, #holes do
+      local h = holes[i]
       local t = T - h.lastFall
-      if t <= 180 then
-        t = t / 180
-        love.graphics.setColor(0.4, 0.6, 0.8)
-        for j = 1, 5 do
-          local vx = love.math.noise(h.x, h.y, h.lastFall / 240.05, j * 12.34)
-          local ht = love.math.noise(h.x, h.y, j * 56.789, h.lastFall / 240.05)
-          vx = vx * vx * 150
-          ht = ht * 200 + 200
-          if (j <= 3) == (h.x % 1 < 0.5) then vx = -vx end
-          love.graphics.circle('fill',
-            board_ox + h.x + vx * t,
-            board_oy + h.y - ht * t * (1 - t),
-            10 * (1 - t)
-          )
-        end
-      end
+      -- Penguins inside
       local falls = h.falls
       local startAngle = love.math.noise(h.created / 240.05) + #falls
       local t0 = (T - h.created) / 240
@@ -307,6 +295,27 @@ return function ()
           board_oy + h.y + dy,
           0.6, 0.6
         )
+      end
+    end
+    for i = 1, #holes do
+      local h = holes[i]
+      local t = T - h.lastFall
+      -- Splattering particles
+      if t <= 180 then
+        t = t / 180
+        love.graphics.setColor(0.4, 0.6, 0.8)
+        for j = 1, 5 do
+          local vx = love.math.noise(h.x, h.y, h.lastFall / 240.05, j * 12.34)
+          local ht = love.math.noise(h.x, h.y, j * 56.789, h.lastFall / 240.05)
+          vx = vx * vx * 150
+          ht = ht * 200 + 200
+          if (j <= 3) == (h.x % 1 < 0.5) then vx = -vx end
+          love.graphics.circle('fill',
+            board_ox + h.x + vx * t,
+            board_oy + h.y - ht * t * (1 - t),
+            10 * (1 - t)
+          )
+        end
       end
     end
     -- Obstacles
