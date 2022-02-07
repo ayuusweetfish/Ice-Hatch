@@ -71,7 +71,7 @@ return function ()
   local nextEgg = EGG_SPAWN_DUR_MIN / 2
   local impCooldown = 0
 
-  -- {x, y, created}
+  -- {x, y, scale, created}
   local puffAnims = {}
 
   local board_ox = W / 2
@@ -202,6 +202,7 @@ return function ()
             puffAnims[#puffAnims + 1] = {
               x = board_ox + x + cos(w) * 20,
               y = board_oy + y + sin(w) * 20,
+              scale = 2.5, alpha = 0.95,
               created = T,
             }
           end
@@ -232,15 +233,23 @@ return function ()
               if x >  w / 2 - CHILD_R then return  w / 2 - CHILD_R end
               return x
             end
+            local xNew = clamp(x - vxUnit * (ADULT_R + CHILD_R + 1e-4), boardW)
+            local yNew = clamp(y - vyUnit * (ADULT_R + CHILD_R + 1e-4), boardH)
             local oNew = phys.addActor(
               CHILD_R,
-              clamp(x - vxUnit * (ADULT_R + CHILD_R + 1e-4), boardW),
-              clamp(y - vyUnit * (ADULT_R + CHILD_R + 1e-4), boardH),
+              xNew, yNew,
               -vx * 0.6, -vy * 0.6,
               math.atan2(-vy, -vx), 0
             )
             oNew.growth = 0
             o.holdEgg = nil
+            -- Puff
+            puffAnims[#puffAnims + 1] = {
+              x = board_ox + xNew,
+              y = board_oy + yNew,
+              scale = 1.5, alpha = 0.6,
+              created = T
+            }
           end
         end
         -- Collecting eggs?
@@ -385,17 +394,16 @@ return function ()
     phys.eachActor(function (o, r, x, y, w, vx, vy)
       -- Drag indicator
       if o == selObj and impCooldown == 0 then
-        local dragLenSq = dragX^2 + dragY^2
-        if dragLenSq < IMP_MAX^2 - 1e-5 then
-          love.graphics.setColor(0.5, 0.6, 0.7)
-        else
-          love.graphics.setColor(0.5, 0.8, 0.4)
-        end
-        love.graphics.setLineWidth(6)
         local px = board_ox + x - dragX * 1
         local py = board_oy + y - dragY * 1
+        love.graphics.setColor(0.5, 0.7, 0.4, 0.15)
+        love.graphics.setLineWidth(1)
+        love.graphics.circle('line', board_ox + x, board_oy + y, IMP_MAX)
+        love.graphics.setColor(0.5, 0.7, 0.4)
+        love.graphics.setLineWidth(6)
         love.graphics.line(board_ox + x, board_oy + y, px, py)
         local angle = math.pi * 0.2
+        local dragLenSq = dragX^2 + dragY^2
         local dragXUnit, dragYUnit = 1, 0
         if dragLenSq >= 1e-5 then
           local dragLen = dragLenSq^0.5
@@ -421,8 +429,8 @@ return function ()
         puffAnims[i] = puffAnims[#puffAnims]
         puffAnims[#puffAnims] = nil
       else
-        local alpha = 1 - t / 360
-        local scale = 2.5 - math.exp(-t / 360 * 3)
+        local alpha = (1 - t / 360) * a.alpha
+        local scale = (1 - 0.4 * math.exp(-t / 360 * 3)) * a.scale
         love.graphics.setColor(1, 1, 1, alpha)
         drawUtils.img('puff', a.x, a.y, 0.5, 0.5, 0, scale, scale)
         i = i + 1
