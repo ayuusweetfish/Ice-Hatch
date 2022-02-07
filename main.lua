@@ -45,6 +45,7 @@ function love.mousepressed(x, y, button, istouch, presses)
   curScene.press(x / globalScale, y / globalScale)
 end
 function love.mousemoved(x, y, button, istouch)
+  curScene.hover(x / globalScale, y / globalScale)
   if mouseScene ~= curScene then return end
   curScene.move(x / globalScale, y / globalScale)
 end

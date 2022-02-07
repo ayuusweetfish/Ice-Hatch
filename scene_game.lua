@@ -80,6 +80,7 @@ return function ()
   local selObj = nil
   local selX, selY
   local dragX, dragY
+  local hoverX, hoverY = W / 2, H / 2
 
   -- Scale ranges outside the board
   local boardPtScale = function (x, halfW)
@@ -106,6 +107,10 @@ return function ()
     end
   end
 
+  s.hover = function (x, y)
+    hoverX, hoverY = x, y
+  end
+
   s.move = function (x, y)
     if selObj ~= nil then
       dragX = boardPtScale(x - board_ox, boardW / 2) - selX
@@ -120,11 +125,16 @@ return function ()
     end
   end
 
+  local dragCircleX, dragCircleY = W / 2, H / 2
+  local dragCircleR = 0
+  local dragCircleA = 0
+
   s.release = function (x, y)
     if selObj ~= nil and impCooldown == 0 then
       local scale = -3
       phys.imp(selObj, dragX * scale, dragY * scale)
       impCooldown = IMP_CD
+      dragCircleR = 50
     end
     selObj = nil
   end
@@ -268,17 +278,26 @@ return function ()
         end
       end)
     end
+    if selObj ~= nil then
+      phys.eachActor(function (o, r, x, y, w, vx, vy)
+        if o == selObj then
+          -- Update drag circle position
+          dragCircleX = dragCircleX + (board_ox + x - dragCircleX) * 0.05
+          dragCircleY = dragCircleY + (board_oy + y - dragCircleY) * 0.05
+          dragCircleR = dragCircleR + (IMP_MAX - dragCircleR) * 0.05
+          dragCircleA = dragCircleA + (1 - dragCircleA) * 0.05
+        end
+      end)
+    else
+      dragCircleX = hoverX
+      dragCircleY = hoverY
+      dragCircleR = dragCircleR + (50 - dragCircleR) * 0.1
+      dragCircleA = dragCircleA + (impCooldown / IMP_CD - dragCircleA) * 0.1
+    end
   end
 
   s.draw = function ()
-    love.graphics.clear(0.95, 0.98, 1)
-    love.graphics.setColor(0, 0, 0)
-    love.graphics.print(tostring(impCooldown), 20, 20)
-    love.graphics.setLineWidth(1)
-    love.graphics.rectangle('line',
-      board_ox - boardW / 2,
-      board_oy - boardH / 2,
-      boardW, boardH)
+    love.graphics.clear(0.92, 0.96, 1)
     -- Holes
     for i = 1, #holes do
       local h = holes[i]
@@ -391,14 +410,14 @@ return function ()
           24, -math.pi * 0.5, math.pi * (-0.5 + 2 * rate), 24)
       end
     end)
+    -- Surrounding borders
+    love.graphics.setColor(1, 1, 1)
+    drawUtils.img('surroundings', W / 2, H / 2)
+    -- Drag indicator
     phys.eachActor(function (o, r, x, y, w, vx, vy)
-      -- Drag indicator
       if o == selObj and impCooldown == 0 then
         local px = board_ox + x - dragX * 1
         local py = board_oy + y - dragY * 1
-        love.graphics.setColor(0.5, 0.7, 0.4, 0.15)
-        love.graphics.setLineWidth(1)
-        love.graphics.circle('line', board_ox + x, board_oy + y, IMP_MAX)
         love.graphics.setColor(0.5, 0.7, 0.4)
         love.graphics.setLineWidth(6)
         love.graphics.line(board_ox + x, board_oy + y, px, py)
@@ -420,6 +439,13 @@ return function ()
         )
       end
     end)
+    if dragCircleR > 0 then
+      love.graphics.setColor(0.5, 0.7, 0.4, 0.8 * dragCircleA)
+      love.graphics.setLineWidth(2)
+      love.graphics.arc('line', 'open',
+        dragCircleX, dragCircleY, dragCircleR,
+        -math.pi * 0.5, math.pi * (1.5 - 2 * (impCooldown / IMP_CD)), 48)
+    end
     -- Puff animations
     local i = 1
     while i <= #puffAnims do
