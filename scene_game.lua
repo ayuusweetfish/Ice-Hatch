@@ -20,10 +20,42 @@ return function ()
   local EGG_HOLE_AVOID = 20
 
   local phys = boardPhys(boardW, boardH)
-  phys.addActor(30, 0, 0, 100, 50, 0, -3)
-  phys.addActor(30, 0, -150, -50, 500, 1, 3)
-  phys.addActor(30, 0, 200, -300, -50, 0, 3)
-  phys.addSolid(-120, -20, 50, 80)
+
+  -- Randomly generate 3 obstacles and 3 actors
+  local objPos = {}
+  for i = 1, 6 do
+    objPos[#objPos + 1] = {
+      x = -boardW / 2 + math.random() * boardW,
+      y = -boardH / 2 + math.random() * boardH
+    }
+  end
+  for its = 1, 100 do
+    local xRange = boardW / 2 - 100
+    local yRange = boardH / 2 - 100
+    for i = 1, #objPos do
+      local xi, yi = objPos[i].x, objPos[i].y
+      for j = 1, #objPos do if i ~= j then
+        local xj, yj = objPos[j].x, objPos[j].y
+        local dsq = (xi - xj)^2 + (yi - yj)^2
+        xi = xi + (xi - xj) / (dsq + i + 10)
+        yi = yi + (yi - yj) / (dsq + i + 10)
+      end end
+      if xi < -xRange then xi = xi - (xi + xRange) / 10 end
+      if xi >  xRange then xi = xi - (xi - xRange) / 10 end
+      if yi < -yRange then yi = yi - (yi + yRange) / 10 end
+      if yi >  yRange then yi = yi - (yi - yRange) / 10 end
+      objPos[i].x, objPos[i].y = xi, yi
+    end
+  end
+  for i = 1, 3 do
+    phys.addSolid(objPos[i].x - 80/2, objPos[i].y - 80/2, 80, 80)
+  end
+  for i = 4, 6 do
+    local v = math.random() * 200 + 50
+    local w = math.random() * math.pi * 2
+    phys.addActor(ADULT_R, objPos[i].x, objPos[i].y,
+      v * cos(w), v * sin(w), w, math.random() * 0.1)
+  end
 
   local holes = {}
   local eggs = {}
