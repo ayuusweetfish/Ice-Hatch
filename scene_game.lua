@@ -1,4 +1,5 @@
 local boardPhys = require 'board_phys'
+local drawUtils = require 'draw_utils'
 local sin, cos = math.sin, math.cos
 
 return function ()
@@ -69,6 +70,9 @@ return function ()
 
   local nextEgg = EGG_SPAWN_DUR_MIN / 2
   local impCooldown = 0
+
+  -- {x, y, created}
+  local puffAnims = {}
 
   local board_ox = W / 2
   local board_oy = H / 2
@@ -151,7 +155,7 @@ return function ()
           end
         until valid or attempts > 100
         if attempts <= 100 then
-          eggs[#eggs + 1] = {x = x, y = y}
+          eggs[#eggs + 1] = {x = x, y = y, created = T}
         end
       end
       phys.step()
@@ -191,6 +195,12 @@ return function ()
           if o.growth >= GROW_DUR then
             o.growth = nil
             phys.setRadius(o, ADULT_R)
+            -- Create a puff animation
+            puffAnims[#puffAnims + 1] = {
+              x = board_ox + x + cos(w) * 20,
+              y = board_oy + y + sin(w) * 20,
+              created = T,
+            }
           end
         end
         -- Incubating eggs?
@@ -249,6 +259,7 @@ return function ()
   end
 
   s.draw = function ()
+    love.graphics.clear(0.95, 0.98, 1)
     love.graphics.setColor(0, 0, 0)
     love.graphics.print(tostring(impCooldown), 20, 20)
     love.graphics.rectangle('line',
@@ -266,22 +277,40 @@ return function ()
     end
     for i = 1, #eggs do
       local e = eggs[i]
-      love.graphics.setColor(0.9, 0.8, 0.7)
-      love.graphics.circle('fill', board_ox + e.x, board_oy + e.y, EGG_R)
+      love.graphics.setColor(1, 1, 1)
+      local rot = 0
+      local t = T - e.created
+      if t <= 360 then
+        t = t / 360
+        rot = math.sin(20 * t) * math.exp(-3 * t) * (1 - t) * 0.4
+      end
+      drawUtils.img('egg', board_ox + e.x, board_oy + e.y, 0.5, 0.7, rot, 1.2)
     end
     love.graphics.setColor(0, 0, 0)
     phys.eachActor(function (o, r, x, y, w, vx, vy)
+      local tint = 1
+      if o.growth ~= nil then
+        tint = 1 - o.growth / GROW_DUR * 0.3
+      end
+      love.graphics.setColor(tint, tint, tint)
+      drawUtils.img(
+        (o.growth ~= nil) and 'penguin_young' or 'penguin_adult',
+        board_ox + x, board_oy + y,
+        0.5, 0.6, w + math.pi / 2)
       if o == selObj and impCooldown == 0 then
         love.graphics.line(
           board_ox + x, board_oy + y,
           board_ox + x - dragX * 1,
           board_oy + y - dragY * 1)
       end
+    --[[
       love.graphics.circle('line', board_ox + x, board_oy + y, r)
       love.graphics.line(
         board_ox + x, board_oy + y,
         board_ox + x + r * cos(w),
         board_oy + y + r * sin(w))
+    --]]
+      love.graphics.setColor(0, 0, 0)
       local s = ''
       for k, v in pairs(o) do
         if k == 'stopTimer' or k == 'holdEgg' or k == 'growth' then
@@ -290,9 +319,26 @@ return function ()
       end
       love.graphics.print(s, board_ox + x, board_oy + y)
     end)
+    love.graphics.setColor(0.7, 0.8, 0.9)
     phys.eachSolid(function (o, x, y, w, h)
       love.graphics.rectangle('fill', board_ox + x, board_oy + y, w, h)
     end)
+    -- Puff animations
+    local i = 1
+    while i <= #puffAnims do
+      local a = puffAnims[i]
+      local t = T - a.created
+      if t >= 360 then
+        puffAnims[i] = puffAnims[#puffAnims]
+        puffAnims[#puffAnims] = nil
+      else
+        local alpha = 1 - t / 360
+        local scale = 2.5 - math.exp(-t / 360 * 3)
+        love.graphics.setColor(1, 1, 1, alpha)
+        drawUtils.img('puff', a.x, a.y, 0.5, 0.5, 0, scale, scale)
+        i = i + 1
+      end
+    end
   end
 
   s.destroy = function ()

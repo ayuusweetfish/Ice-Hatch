@@ -110,8 +110,6 @@ transitions['fadeOrange'] = {
 
 function love.draw()
   love.graphics.scale(globalScale)
-  love.graphics.setColor(0.975, 0.975, 0.975)
-  love.graphics.rectangle('fill', 0, 0, W, H)
   love.graphics.setColor(1, 1, 1)
   if lastScene ~= nil then
     local x = transitionTimer / currentTransition.dur
