@@ -13,8 +13,8 @@ return function ()
   local ADULT_R = 35
   local CHILD_R = 25
   local BREAK_DUR = 480
-  local HATCH_DUR = 480
-  local GROW_DUR = 480
+  local HATCH_DUR = 720
+  local GROW_DUR = 960
   local EGG_SPAWN_DUR_MIN = 720
   local EGG_SPAWN_DUR_VAR = 240
   local EGG_R = 10
@@ -266,15 +266,39 @@ return function ()
       board_ox - boardW / 2,
       board_oy - boardH / 2,
       boardW, boardH)
+    -- Holes
     for i = 1, #holes do
       local h = holes[i]
-      love.graphics.setColor(0.9, 0.9, 0.9)
-      love.graphics.circle('fill', board_ox + h.x, board_oy + h.y, h.r)
-      love.graphics.setColor(0, 0, 0)
-      love.graphics.print(
-        tostring(h.count) .. ', ' .. tostring(T - h.created),
+      love.graphics.setColor(1, 1, 1)
+      drawUtils.img(
+        h.r == CHILD_R and 'hole_small' or 'hole_large',
         board_ox + h.x, board_oy + h.y)
+      local t = T - h.created
+      if t <= 180 then
+        t = t / 180
+        love.graphics.setColor(0.4, 0.6, 0.8)
+        for j = 1, 5 do
+          local vx = love.math.noise(h.x, h.y, j * 12.34)
+          local ht = love.math.noise(h.x, h.y, j * 56.789)
+          vx = vx * 360 - 180
+          ht = ht * 200 + 200
+          if (j <= 3) == (h.x % 1 < 0.5) then vx = -vx end
+          love.graphics.circle('fill',
+            board_ox + h.x + vx * t,
+            board_oy + h.y - ht * t * (1 - t),
+            10 * (1 - t)
+          )
+        end
+      end
     end
+    -- Obstacles
+    love.graphics.setColor(1, 1, 1)
+    phys.eachSolid(function (o, x, y, w, h)
+      drawUtils.img('obstacle',
+        board_ox + x, board_oy + y,
+        0, 0, 0, w / 80, h / 80)
+    end)
+    -- Eggs
     for i = 1, #eggs do
       local e = eggs[i]
       love.graphics.setColor(1, 1, 1)
@@ -286,8 +310,17 @@ return function ()
       end
       drawUtils.img('egg', board_ox + e.x, board_oy + e.y, 0.5, 0.7, rot, 1.2)
     end
-    love.graphics.setColor(0, 0, 0)
+    -- Penguins
     phys.eachActor(function (o, r, x, y, w, vx, vy)
+      -- Egg
+      if o.holdEgg ~= nil then
+        love.graphics.setColor(1, 1, 1)
+        drawUtils.img('egg',
+          board_ox + x - cos(w) * 24,
+          board_oy + y - sin(w) * 24,
+          0.5, 0.5, w + math.pi / 2)
+      end
+      -- Penguin body
       local tint = 1
       if o.growth ~= nil then
         tint = 1 - o.growth / GROW_DUR * 0.3
@@ -318,10 +351,6 @@ return function ()
         end
       end
       love.graphics.print(s, board_ox + x, board_oy + y)
-    end)
-    love.graphics.setColor(0.7, 0.8, 0.9)
-    phys.eachSolid(function (o, x, y, w, h)
-      love.graphics.rectangle('fill', board_ox + x, board_oy + y, w, h)
     end)
     -- Puff animations
     local i = 1
