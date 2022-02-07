@@ -359,30 +359,6 @@ return function ()
         (o.growth ~= nil) and 'penguin_young' or 'penguin_adult',
         board_ox + x, board_oy + y,
         0.5, 0.6, w + math.pi / 2)
-      -- Drag indicator
-      if o == selObj and impCooldown == 0 then
-        love.graphics.setColor(0.5, 0.7, 0.4)
-        love.graphics.setLineWidth(6)
-        local px = board_ox + x - dragX * 1
-        local py = board_oy + y - dragY * 1
-        love.graphics.line(board_ox + x, board_oy + y, px, py)
-        local angle = math.pi * 0.2
-        local dragLenSq = dragX^2 + dragY^2
-        local dragXUnit, dragYUnit = 1, 0
-        if dragLenSq >= 1e-5 then
-          local dragLen = dragLenSq^0.5
-          local arrowheadLen = (dragLen < 20 and dragLen or 20)
-          dragXUnit = dragX / dragLen * arrowheadLen
-          dragYUnit = dragY / dragLen * arrowheadLen
-        end
-        love.graphics.line(
-          px + dragXUnit * cos(angle) - dragYUnit * sin(angle),
-          py + dragXUnit * sin(angle) + dragYUnit * cos(angle),
-          px, py,
-          px + dragXUnit * cos(angle) + dragYUnit * sin(angle),
-          py - dragXUnit * sin(angle) + dragYUnit * cos(angle)
-        )
-      end
       -- Stop timer indicator
       if o.stopTimer ~= nil then
         local rate = o.stopTimer / BREAK_DUR
@@ -404,6 +380,36 @@ return function ()
         love.graphics.arc('line',
           board_ox + x, board_oy + y,
           24, -math.pi * 0.5, math.pi * (-0.5 + 2 * rate), 24)
+      end
+    end)
+    phys.eachActor(function (o, r, x, y, w, vx, vy)
+      -- Drag indicator
+      if o == selObj and impCooldown == 0 then
+        local dragLenSq = dragX^2 + dragY^2
+        if dragLenSq < IMP_MAX^2 - 1e-5 then
+          love.graphics.setColor(0.5, 0.6, 0.7)
+        else
+          love.graphics.setColor(0.5, 0.8, 0.4)
+        end
+        love.graphics.setLineWidth(6)
+        local px = board_ox + x - dragX * 1
+        local py = board_oy + y - dragY * 1
+        love.graphics.line(board_ox + x, board_oy + y, px, py)
+        local angle = math.pi * 0.2
+        local dragXUnit, dragYUnit = 1, 0
+        if dragLenSq >= 1e-5 then
+          local dragLen = dragLenSq^0.5
+          local arrowheadLen = (dragLen < 20 and dragLen or 20)
+          dragXUnit = dragX / dragLen * arrowheadLen
+          dragYUnit = dragY / dragLen * arrowheadLen
+        end
+        love.graphics.line(
+          px + dragXUnit * cos(angle) - dragYUnit * sin(angle),
+          py + dragXUnit * sin(angle) + dragYUnit * cos(angle),
+          px, py,
+          px + dragXUnit * cos(angle) + dragYUnit * sin(angle),
+          py - dragXUnit * sin(angle) + dragYUnit * cos(angle)
+        )
       end
     end)
     -- Puff animations
