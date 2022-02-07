@@ -168,7 +168,7 @@ return function ()
                 created = T,
                 count = 1,
               }
-              return true
+              -- Will fall into the hole in the following check
             end
           end
         else
@@ -180,6 +180,8 @@ return function ()
           if (x - h.x)^2 + (y - h.y)^2 < h.r^2 then
             -- Fallen!
             h.count = h.count + 1
+            -- This may happen if the object is held before cooldown runs out
+            if selObj == o then selObj = nil end
             return true
           end
         end
