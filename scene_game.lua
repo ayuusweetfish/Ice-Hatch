@@ -9,8 +9,8 @@ return function ()
   local boardW = W * 0.8
   local boardH = H * 0.8
 
-  local ADULT_R = 30
-  local CHILD_R = 20
+  local ADULT_R = 35
+  local CHILD_R = 25
   local BREAK_DUR = 480
   local HATCH_DUR = 480
   local GROW_DUR = 480
@@ -21,12 +21,14 @@ return function ()
 
   local phys = boardPhys(boardW, boardH)
 
-  -- Randomly generate 3 obstacles and 3 actors
+  love.math.setRandomSeed(101)
+
+  -- Randomly generate 3 obstacles and 2 penguins
   local objPos = {}
-  for i = 1, 6 do
+  for i = 1, 5 do
     objPos[#objPos + 1] = {
-      x = -boardW / 2 + math.random() * boardW,
-      y = -boardH / 2 + math.random() * boardH
+      x = -boardW / 2 + love.math.random() * boardW,
+      y = -boardH / 2 + love.math.random() * boardH
     }
   end
   for its = 1, 100 do
@@ -37,24 +39,28 @@ return function ()
       for j = 1, #objPos do if i ~= j then
         local xj, yj = objPos[j].x, objPos[j].y
         local dsq = (xi - xj)^2 + (yi - yj)^2
-        xi = xi + (xi - xj) / (dsq + i + 10)
-        yi = yi + (yi - yj) / (dsq + i + 10)
+        if dsq <= 300^2 then
+          local d = dsq^0.5
+          xi = xi + (xi - xj) / d * (300 - d)
+          yi = yi + (yi - yj) / d * (300 - d)
+        end
       end end
-      if xi < -xRange then xi = xi - (xi + xRange) / 10 end
-      if xi >  xRange then xi = xi - (xi - xRange) / 10 end
-      if yi < -yRange then yi = yi - (yi + yRange) / 10 end
-      if yi >  yRange then yi = yi - (yi - yRange) / 10 end
+      if xi < -xRange then xi = xi - (xi + xRange) / 2 end
+      if xi >  xRange then xi = xi - (xi - xRange) / 2 end
+      if yi < -yRange then yi = yi - (yi + yRange) / 2 end
+      if yi >  yRange then yi = yi - (yi - yRange) / 2 end
       objPos[i].x, objPos[i].y = xi, yi
+      print(i, xi, yi)
     end
   end
   for i = 1, 3 do
     phys.addSolid(objPos[i].x - 80/2, objPos[i].y - 80/2, 80, 80)
   end
-  for i = 4, 6 do
-    local v = math.random() * 200 + 50
-    local w = math.random() * math.pi * 2
+  for i = 4, 5 do
+    local v = love.math.random() * 200 + 50
+    local w = love.math.random() * math.pi * 2
     phys.addActor(ADULT_R, objPos[i].x, objPos[i].y,
-      v * cos(w), v * sin(w), w, math.random() * 0.1)
+      v * cos(w), v * sin(w), w, love.math.random() * 0.1)
   end
 
   local holes = {}
@@ -106,13 +112,13 @@ return function ()
       T = T + 1
       -- Spawn an egg?
       if T == nextEgg then
-        nextEgg = nextEgg + EGG_SPAWN_DUR_MIN + math.random(EGG_SPAWN_DUR_VAR)
+        nextEgg = nextEgg + EGG_SPAWN_DUR_MIN + love.math.random(EGG_SPAWN_DUR_VAR)
         -- Pick a position for the egg
         local x, y
         local attempts = 0
         repeat
-          x = -boardW / 2 + ADULT_R + math.random() * (boardW - ADULT_R * 2)
-          y = -boardH / 2 + ADULT_R + math.random() * (boardH - ADULT_R * 2)
+          x = -boardW / 2 + ADULT_R + love.math.random() * (boardW - ADULT_R * 2)
+          y = -boardH / 2 + ADULT_R + love.math.random() * (boardH - ADULT_R * 2)
           local valid = not phys.queryPoint(x, y)
           -- Is in hole?
           if valid then
