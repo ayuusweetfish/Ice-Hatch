@@ -193,10 +193,15 @@ return function ()
                 vxUnit, vyUnit = 1, 0
               end
             end
+            local clamp = function (x, w)
+              if x < -w / 2 + CHILD_R then return -w / 2 + CHILD_R end
+              if x >  w / 2 - CHILD_R then return  w / 2 - CHILD_R end
+              return x
+            end
             local oNew = phys.addActor(
               CHILD_R,
-              x - vxUnit * (ADULT_R + CHILD_R + 1e-4),
-              y - vyUnit * (ADULT_R + CHILD_R + 1e-4),
+              clamp(x - vxUnit * (ADULT_R + CHILD_R + 1e-4), boardW),
+              clamp(y - vyUnit * (ADULT_R + CHILD_R + 1e-4), boardH),
               -vx * 0.6, -vy * 0.6,
               math.atan2(-vy, -vx), 0
             )
