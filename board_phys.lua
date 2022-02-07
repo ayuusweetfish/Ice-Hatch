@@ -61,6 +61,14 @@ return function (W, H)
     o.body:setAngularVelocity(0)
   end
 
+  b.setRadius = function (o, r)
+    o.r = r
+    o.shape:setRadius(r)
+    o.fixt:destroy()
+    o.fixt = love.physics.newFixture(o.body, o.shape)
+    o.fixt:setRestitution(0.9)
+  end
+
   b.step = function ()
     world:update(1/240)
   end
