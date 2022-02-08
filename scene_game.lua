@@ -21,10 +21,11 @@ return function (best)
   local GROW_DUR = 960
   local EGG_SPAWN_DUR_MIN = 720
   local EGG_SPAWN_DUR_VAR = 240
-  local EGG_R = 10
+  local EGG_R = 20
   local EGG_HOLE_AVOID = 20
   local IMP_MAX = 160
   local IMP_CD = 240
+  local IMP_RATE = 4
 
   local phys = boardPhys(boardW, boardH)
 
@@ -150,8 +151,7 @@ return function (best)
       _G['replaceScene'](_G['sceneGame'](math.max(score, best)), 'snowwind')
     end
     if selObj ~= nil and impCooldown == 0 then
-      local scale = -3
-      phys.imp(selObj, dragX * scale, dragY * scale)
+      phys.imp(selObj, dragX * -IMP_RATE, dragY * -IMP_RATE)
       impCooldown = IMP_CD
       dragCircleR = 50
     end
