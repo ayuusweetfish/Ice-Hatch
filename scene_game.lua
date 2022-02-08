@@ -262,6 +262,9 @@ return function (seed, best, tutorialFn)
               scale = 2.5, alpha = 0.95,
               created = T,
             }
+            -- Update score
+            score = score + 1
+            updateScoreText()
             if tutorial ~= nil then tutorial.on('grow', phys) end
           end
         end
