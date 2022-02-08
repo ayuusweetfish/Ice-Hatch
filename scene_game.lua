@@ -5,6 +5,7 @@ local sin, cos = math.sin, math.cos
 return function ()
   local s = {}
   local W, H = W, H
+  local font = _G['font_VarelaR']
   local T = 0
 
   local boardW = W * 0.8
@@ -139,6 +140,13 @@ return function ()
     selObj = nil
   end
 
+  local score = 0
+  local textScore
+  local updateScoreText = function ()
+    textScore = love.graphics.newText(font[48], tostring(score))
+  end
+  updateScoreText()
+
   s.update = function ()
     if selObj == nil or impCooldown > 0 then
       T = T + 1
@@ -253,6 +261,9 @@ return function ()
             )
             oNew.growth = 0
             o.holdEgg = nil
+            -- Update score
+            score = score + 1
+            updateScoreText()
             -- Puff
             puffAnims[#puffAnims + 1] = {
               x = board_ox + xNew,
@@ -462,6 +473,11 @@ return function ()
         i = i + 1
       end
     end
+    -- Score
+    love.graphics.setColor(0.6, 0.6, 0.6)
+    love.graphics.draw(textScore, 22, 22)
+    love.graphics.setColor(1, 1, 1)
+    love.graphics.draw(textScore, 20, 20)
   end
 
   s.destroy = function ()

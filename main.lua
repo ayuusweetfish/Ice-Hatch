@@ -16,8 +16,12 @@ W = wDev / hDev * H
 globalScale = math.min(wDev / W, hDev / H)
 
 -- Load font
---_G['font_Mali'] = love.graphics.newFont('res/Mali-Regular.ttf', 40)
---love.graphics.setFont(_G['font_Mali'])
+local font = {}
+for _, size in ipairs({40, 48}) do
+  font[size] = love.graphics.newFont('res/VarelaRound-Regular.ttf', size)
+end
+_G['font_VarelaR'] = font
+love.graphics.setFont(font[40])
 
 local sceneIntro = require 'scene_intro'
 local sceneGame = require 'scene_game'
