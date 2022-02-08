@@ -3,13 +3,15 @@ local finishOverlay = require 'finish_overlay'
 local drawUtils = require 'draw_utils'
 local sin, cos = math.sin, math.cos
 
-return function (seed, best, tutorial)
+return function (seed, best, tutorialFn)
   local s = {}
   local W, H = W, H
   local font = _G['font_VarelaR']
   local T = 0
 
   best = best or 0
+  local tutorial = nil
+  if tutorialFn ~= nil then tutorial = tutorialFn() end
 
   local boardW = W * 0.8
   local boardH = H * 0.8
@@ -35,7 +37,7 @@ return function (seed, best, tutorial)
 
   love.math.setRandomSeed(seed)
 
-  if tutorial ~= nil then
+  if tutorialFn ~= nil then
     tutorial.board(boardW, boardH, phys, ADULT_R, eggs)
   else
     -- Randomly generate 3 obstacles and 2 penguins
@@ -158,6 +160,9 @@ return function (seed, best, tutorial)
       local newSeed = (seed + score * 10000 + T) % 0x3fffffff
       _G['replaceScene'](_G['sceneGame'](newSeed, math.max(score, best)), 'snowwind')
     end
+    if tutorialFinishTime ~= nil and T >= tutorialFinishTime + 120 then
+      _G['replaceScene'](tutorial.next(), 'snowwind')
+    end
     if selObj ~= nil and impCooldown == 0 then
       phys.imp(selObj, dragX * -IMP_RATE, dragY * -IMP_RATE)
       impCooldown = IMP_CD
@@ -168,7 +173,10 @@ return function (seed, best, tutorial)
   end
 
   s.update = function ()
-    if tutorial ~= nil then tutorial.update(phys) end
+    if tutorial ~= nil then
+      tutorial.update(phys)
+      if tutorial.stopped() then impCooldown = 0 end
+    end
     if (selObj == nil or impCooldown > 0) and
        (tutorial == nil or not tutorial.stopped())
     then
@@ -176,7 +184,7 @@ return function (seed, best, tutorial)
       if impCooldown > 0 then impCooldown = impCooldown - 1 end
       -- Spawn an egg?
       -- If a finish overlay is created, no more eggs will be spawned
-      if T == nextEgg and finOverlay ~= nil then
+      if T == nextEgg and tutorial == nil and finOverlay == nil then
         nextEgg = nextEgg + EGG_SPAWN_DUR_MIN + love.math.random(EGG_SPAWN_DUR_VAR)
         -- Pick a position for the egg
         local x, y
@@ -233,6 +241,11 @@ return function (seed, best, tutorial)
             h.lastFall = T
             -- This may happen if the object is held before cooldown runs out
             if selObj == o then selObj = nil end
+            -- If failing tutorials, restart now
+            if tutorial ~= nil then
+              tutorial.on('fall', phys)
+              if tutorialFinishTime == nil then tutorialFinishTime = T end
+            end
             return true
           end
         end
@@ -249,6 +262,7 @@ return function (seed, best, tutorial)
               scale = 2.5, alpha = 0.95,
               created = T,
             }
+            if tutorial ~= nil then tutorial.on('grow', phys) end
           end
         end
         -- Incubating eggs?
@@ -297,6 +311,7 @@ return function (seed, best, tutorial)
               scale = 1.5, alpha = 0.6,
               created = T
             }
+            if tutorial ~= nil then tutorial.on('hatch', phys) end
           end
         end
         -- Collecting eggs?
@@ -309,6 +324,7 @@ return function (seed, best, tutorial)
               eggs[#eggs] = nil
               -- Mark current penguin as holding an egg
               o.holdEgg = 0
+              if tutorial ~= nil then tutorial.on('hold_egg', phys) end
               break
             end
           end
@@ -342,8 +358,8 @@ return function (seed, best, tutorial)
     if finOverlay ~= nil then
       finOverlay.update()
     end
-    if T - 720 == tutorialFinishTime then
-      _G['replaceScene'](tutorial.next(), 'snowwind')
+    if T - 180 == tutorialFinishTime and tutorial.restart() then
+      _G['replaceScene'](_G['sceneGame'](seed, best, tutorialFn), 'snowwind')
     end
   end
 

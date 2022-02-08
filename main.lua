@@ -28,7 +28,7 @@ local sceneGame = require 'scene_game'
 _G['sceneIntro'] = sceneIntro
 _G['sceneGame'] = sceneGame
 
-local curScene = sceneGame(0, 0, require('tutorials')[1]())
+local curScene = sceneGame(0, 0, require('tutorials')[1])
 local lastScene = nil
 local transitionTimer = 0
 local currentTransition = nil
