@@ -17,7 +17,7 @@ globalScale = math.min(wDev / W, hDev / H)
 
 -- Load font
 local font = {}
-for _, size in ipairs({28, 40, 48, 60}) do
+for _, size in ipairs({28, 40, 48, 60, 120}) do
   font[size] = love.graphics.newFont('res/VarelaRound-Regular.ttf', size)
 end
 _G['font_VarelaR'] = font
@@ -28,7 +28,7 @@ local sceneGame = require 'scene_game'
 _G['sceneIntro'] = sceneIntro
 _G['sceneGame'] = sceneGame
 
-local curScene = sceneGame(0, 0, require('tutorials')[1])
+local curScene = sceneIntro()
 local lastScene = nil
 local transitionTimer = 0
 local currentTransition = nil
