@@ -10,7 +10,7 @@ love.window.setMode(
   isWeb and (H / 3 * 2) or H,
   { fullscreen = isMobile, highdpi = true }
 )
-love.window.setTitle('Daytime Cat')
+love.window.setTitle('Ice Hatch')
 local wDev, hDev = love.graphics.getDimensions()
 W = wDev / hDev * H
 globalScale = math.min(wDev / W, hDev / H)
