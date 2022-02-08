@@ -430,13 +430,19 @@ return function (best)
         love.graphics.arc('fill',
           board_ox + x, board_oy + y,
           24, -math.pi * 0.5, math.pi * (-0.5 + 2 * rate), 24)
-        local alpha = 1
-        if rate < 0.05 then alpha = (rate / 0.05)^4 end
-        love.graphics.setColor(r, g, b, alpha)
+        love.graphics.setColor(r, g, b)
         love.graphics.setLineWidth(2)
-        love.graphics.arc('line',
+        love.graphics.arc('line', 'open',
           board_ox + x, board_oy + y,
           24, -math.pi * 0.5, math.pi * (-0.5 + 2 * rate), 24)
+        love.graphics.line(
+          board_ox + x, board_oy + y - 24,
+          board_ox + x, board_oy + y)
+        love.graphics.line(
+          board_ox + x, board_oy + y,
+          board_ox + x + cos(math.pi * (-0.5 + 2 * rate)) * 24,
+          board_oy + y + sin(math.pi * (-0.5 + 2 * rate)) * 24
+        )
       end
     end)
     -- Surrounding borders
