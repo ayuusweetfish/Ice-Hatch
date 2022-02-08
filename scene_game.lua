@@ -163,7 +163,8 @@ return function (best)
       T = T + 1
       if impCooldown > 0 then impCooldown = impCooldown - 1 end
       -- Spawn an egg?
-      if T == nextEgg then
+      -- If a finish overlay is created, no more eggs will be spawned
+      if T == nextEgg and finOverlay ~= nil then
         nextEgg = nextEgg + EGG_SPAWN_DUR_MIN + love.math.random(EGG_SPAWN_DUR_VAR)
         -- Pick a position for the egg
         local x, y
