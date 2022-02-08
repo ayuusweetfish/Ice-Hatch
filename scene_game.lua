@@ -3,7 +3,7 @@ local finishOverlay = require 'finish_overlay'
 local drawUtils = require 'draw_utils'
 local sin, cos = math.sin, math.cos
 
-return function (best)
+return function (seed, best, tutorial)
   local s = {}
   local W, H = W, H
   local font = _G['font_VarelaR']
@@ -16,6 +16,7 @@ return function (best)
 
   local ADULT_R = 35
   local CHILD_R = 25
+  local BREAK_VEL_LIMIT = 20
   local BREAK_DUR = 480
   local HATCH_DUR = 720
   local GROW_DUR = 960
@@ -29,49 +30,53 @@ return function (best)
 
   local phys = boardPhys(boardW, boardH)
 
-  love.math.setRandomSeed(101)
-
-  -- Randomly generate 3 obstacles and 2 penguins
-  local objPos = {}
-  for i = 1, 5 do
-    objPos[#objPos + 1] = {
-      x = -boardW / 2 + love.math.random() * boardW,
-      y = -boardH / 2 + love.math.random() * boardH
-    }
-  end
-  for its = 1, 100 do
-    local xRange = boardW / 2 - 100
-    local yRange = boardH / 2 - 100
-    for i = 1, #objPos do
-      local xi, yi = objPos[i].x, objPos[i].y
-      for j = 1, #objPos do if i ~= j then
-        local xj, yj = objPos[j].x, objPos[j].y
-        local dsq = (xi - xj)^2 + (yi - yj)^2
-        if dsq <= 300^2 then
-          local d = dsq^0.5
-          xi = xi + (xi - xj) / d * (300 - d)
-          yi = yi + (yi - yj) / d * (300 - d)
-        end
-      end end
-      if xi < -xRange then xi = xi - (xi + xRange) / 2 end
-      if xi >  xRange then xi = xi - (xi - xRange) / 2 end
-      if yi < -yRange then yi = yi - (yi + yRange) / 2 end
-      if yi >  yRange then yi = yi - (yi - yRange) / 2 end
-      objPos[i].x, objPos[i].y = xi, yi
-    end
-  end
-  for i = 1, 3 do
-    phys.addSolid(objPos[i].x - 80/2, objPos[i].y - 80/2, 80, 80)
-  end
-  for i = 4, 5 do
-    local v = love.math.random() * 200 + 50
-    local w = love.math.random() * math.pi * 2
-    phys.addActor(ADULT_R, objPos[i].x, objPos[i].y,
-      v * cos(w), v * sin(w), w, love.math.random() * 0.1)
-  end
-
   local holes = {}
   local eggs = {}
+
+  love.math.setRandomSeed(seed)
+
+  if tutorial ~= nil then
+    tutorial.board(boardW, boardH, phys, ADULT_R, eggs)
+  else
+    -- Randomly generate 3 obstacles and 2 penguins
+    local objPos = {}
+    for i = 1, 5 do
+      objPos[#objPos + 1] = {
+        x = -boardW / 2 + love.math.random() * boardW,
+        y = -boardH / 2 + love.math.random() * boardH
+      }
+    end
+    for its = 1, 100 do
+      local xRange = boardW / 2 - 100
+      local yRange = boardH / 2 - 100
+      for i = 1, #objPos do
+        local xi, yi = objPos[i].x, objPos[i].y
+        for j = 1, #objPos do if i ~= j then
+          local xj, yj = objPos[j].x, objPos[j].y
+          local dsq = (xi - xj)^2 + (yi - yj)^2
+          if dsq <= 300^2 then
+            local d = dsq^0.5
+            xi = xi + (xi - xj) / d * (300 - d)
+            yi = yi + (yi - yj) / d * (300 - d)
+          end
+        end end
+        if xi < -xRange then xi = xi - (xi + xRange) / 2 end
+        if xi >  xRange then xi = xi - (xi - xRange) / 2 end
+        if yi < -yRange then yi = yi - (yi + yRange) / 2 end
+        if yi >  yRange then yi = yi - (yi - yRange) / 2 end
+        objPos[i].x, objPos[i].y = xi, yi
+      end
+    end
+    for i = 1, 3 do
+      phys.addSolid(objPos[i].x - 80/2, objPos[i].y - 80/2, 80, 80)
+    end
+    for i = 4, 5 do
+      local v = love.math.random() * 200 + 50
+      local w = love.math.random() * math.pi * 2
+      phys.addActor(ADULT_R, objPos[i].x, objPos[i].y,
+        v * cos(w), v * sin(w), w, love.math.random() * 0.1)
+    end
+  end
 
   local nextEgg = EGG_SPAWN_DUR_MIN / 2
   local impCooldown = 0
@@ -80,6 +85,7 @@ return function (best)
   local puffAnims = {}
 
   local finOverlay = nil
+  local tutorialFinishTime = nil
 
   local board_ox = W / 2
   local board_oy = H / 2
@@ -98,6 +104,7 @@ return function (best)
 
   s.press = function (x, y)
     if finOverlay ~= nil and finOverlay.press() then return end
+    if tutorial ~= nil and tutorial.disabled() then return end
     selObj = nil
     local best = 1e8
     local mx, my = x - board_ox, y - board_oy
@@ -148,18 +155,23 @@ return function (best)
 
   s.release = function (x, y)
     if finOverlay ~= nil and finOverlay.release() then
-      _G['replaceScene'](_G['sceneGame'](math.max(score, best)), 'snowwind')
+      local newSeed = (seed + score * 10000 + T) % 0x3fffffff
+      _G['replaceScene'](_G['sceneGame'](newSeed, math.max(score, best)), 'snowwind')
     end
     if selObj ~= nil and impCooldown == 0 then
       phys.imp(selObj, dragX * -IMP_RATE, dragY * -IMP_RATE)
       impCooldown = IMP_CD
       dragCircleR = 50
+      if tutorial ~= nil then tutorial.on('imp', phys) end
     end
     selObj = nil
   end
 
   s.update = function ()
-    if selObj == nil or impCooldown > 0 then
+    if tutorial ~= nil then tutorial.update(phys) end
+    if (selObj == nil or impCooldown > 0) and
+       (tutorial == nil or not tutorial.stopped())
+    then
       T = T + 1
       if impCooldown > 0 then impCooldown = impCooldown - 1 end
       -- Spawn an egg?
@@ -191,8 +203,10 @@ return function (best)
       phys.step()
       phys.eachActor(function (o, r, x, y, w, vx, vy)
         -- Self is stopped?
-        if vx^2 + vy^2 < 20^2 then
-          if o.stopTimer == nil then o.stopTimer = 1
+        if vx^2 + vy^2 < BREAK_VEL_LIMIT^2 then
+          if o.stopTimer == nil then
+            o.stopTimer = 1
+            if tutorial ~= nil then tutorial.on('start_break', phys) end
           else
             o.stopTimer = o.stopTimer + 1
             if o.stopTimer >= BREAK_DUR then
@@ -319,10 +333,17 @@ return function (best)
     end
     -- Game end?
     if finOverlay == nil and phys.isEmpty() then
-      finOverlay = finishOverlay(score, best)
+      if tutorial ~= nil then
+        if tutorialFinishTime == nil then tutorialFinishTime = T end
+      else
+        finOverlay = finishOverlay(score, best)
+      end
     end
     if finOverlay ~= nil then
       finOverlay.update()
+    end
+    if T - 720 == tutorialFinishTime then
+      _G['replaceScene'](tutorial.next(), 'snowwind')
     end
   end
 
@@ -503,6 +524,8 @@ return function (best)
     love.graphics.draw(textScore, 22, 22)
     love.graphics.setColor(1, 1, 1)
     love.graphics.draw(textScore, 20, 20)
+    -- Tutorial
+    if tutorial ~= nil then tutorial.draw() end
     -- Overlay
     if finOverlay ~= nil then
       finOverlay.draw()
