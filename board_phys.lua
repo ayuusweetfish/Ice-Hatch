@@ -113,5 +113,13 @@ return function (W, H)
     return found
   end
 
+  b.isEmpty = function ()
+    return (#actors == 0)
+  end
+
+  b.destroy = function ()
+    world:destroy()
+  end
+
   return b
 end

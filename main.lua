@@ -17,7 +17,7 @@ globalScale = math.min(wDev / W, hDev / H)
 
 -- Load font
 local font = {}
-for _, size in ipairs({40, 48}) do
+for _, size in ipairs({28, 40, 48, 60}) do
   font[size] = love.graphics.newFont('res/VarelaRound-Regular.ttf', size)
 end
 _G['font_VarelaR'] = font

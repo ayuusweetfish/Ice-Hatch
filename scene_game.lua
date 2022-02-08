@@ -1,12 +1,15 @@
 local boardPhys = require 'board_phys'
+local finishOverlay = require 'finish_overlay'
 local drawUtils = require 'draw_utils'
 local sin, cos = math.sin, math.cos
 
-return function ()
+return function (best)
   local s = {}
   local W, H = W, H
   local font = _G['font_VarelaR']
   local T = 0
+
+  best = best or 0
 
   local boardW = W * 0.8
   local boardH = H * 0.8
@@ -75,6 +78,8 @@ return function ()
   -- {x, y, scale, created}
   local puffAnims = {}
 
+  local finOverlay = nil
+
   local board_ox = W / 2
   local board_oy = H / 2
 
@@ -91,6 +96,7 @@ return function ()
   end
 
   s.press = function (x, y)
+    if finOverlay ~= nil and finOverlay.press() then return end
     selObj = nil
     local best = 1e8
     local mx, my = x - board_ox, y - board_oy
@@ -109,10 +115,12 @@ return function ()
   end
 
   s.hover = function (x, y)
+    if finOverlay ~= nil then return end
     hoverX, hoverY = x, y
   end
 
   s.move = function (x, y)
+    if finOverlay ~= nil then return end
     if selObj ~= nil then
       dragX = boardPtScale(x - board_ox, boardW / 2) - selX
       dragY = boardPtScale(y - board_oy, boardH / 2) - selY
@@ -130,7 +138,17 @@ return function ()
   local dragCircleR = 0
   local dragCircleA = 0
 
+  local score = 0
+  local textScore
+  local updateScoreText = function ()
+    textScore = love.graphics.newText(font[48], tostring(score))
+  end
+  updateScoreText()
+
   s.release = function (x, y)
+    if finOverlay ~= nil and finOverlay.release() then
+      _G['replaceScene'](_G['sceneGame'](math.max(score, best)))
+    end
     if selObj ~= nil and impCooldown == 0 then
       local scale = -3
       phys.imp(selObj, dragX * scale, dragY * scale)
@@ -139,13 +157,6 @@ return function ()
     end
     selObj = nil
   end
-
-  local score = 0
-  local textScore
-  local updateScoreText = function ()
-    textScore = love.graphics.newText(font[48], tostring(score))
-  end
-  updateScoreText()
 
   s.update = function ()
     if selObj == nil or impCooldown > 0 then
@@ -289,10 +300,10 @@ return function ()
         end
       end)
     end
+    -- Update drag circle position
     if selObj ~= nil then
       phys.eachActor(function (o, r, x, y, w, vx, vy)
         if o == selObj then
-          -- Update drag circle position
           dragCircleX = dragCircleX + (board_ox + x - dragCircleX) * 0.05
           dragCircleY = dragCircleY + (board_oy + y - dragCircleY) * 0.05
           dragCircleR = dragCircleR + (IMP_MAX - dragCircleR) * 0.05
@@ -304,6 +315,13 @@ return function ()
       dragCircleY = hoverY
       dragCircleR = dragCircleR + (50 - dragCircleR) * 0.1
       dragCircleA = dragCircleA + (impCooldown / IMP_CD - dragCircleA) * 0.1
+    end
+    -- Game end?
+    if finOverlay == nil and phys.isEmpty() then
+      finOverlay = finishOverlay(score, best)
+    end
+    if finOverlay ~= nil then
+      finOverlay.update()
     end
   end
 
@@ -478,10 +496,14 @@ return function ()
     love.graphics.draw(textScore, 22, 22)
     love.graphics.setColor(1, 1, 1)
     love.graphics.draw(textScore, 20, 20)
+    -- Overlay
+    if finOverlay ~= nil then
+      finOverlay.draw()
+    end
   end
 
   s.destroy = function ()
-    world:destroy()
+    phys.destroy()
   end
 
   return s
