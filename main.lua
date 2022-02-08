@@ -97,19 +97,40 @@ transitions['fadeBlack'] = {
   end
 }
 
-transitions['fadeOrange'] = {
-  dur = 80,
+local snowEdgeW = W / 5
+local snowEdge = love.image.newImageData(snowEdgeW, H)
+for y = 0, H - 1 do
+  for x = 0, snowEdgeW - 1 do
+    local a = love.math.noise(2022.02 + x / 90, 2.08 + y / 40)
+    local t = (x + 0.5) / snowEdgeW
+    a = math.max(0, math.min(1, a + (t * 2 - 1)))
+    snowEdge:setPixel(x, y, 1, 1, 1, a)
+  end
+end
+snowEdge = love.graphics.newImage(snowEdge)
+
+transitions['snowwind'] = {
+  dur = 160,
   draw = function (x)
-    local opacity = 0
-    if x < 0.5 then
+    local R = 0.4
+    local margin = snowEdgeW / 2
+    local left = -margin
+    local right = W + margin
+    if x < R then
       lastScene:draw()
-      opacity = x * 2
-    else
+      local t = x / R
+      right = -margin + t * (W + margin * 2)
+      love.graphics.setColor(0.93, 0.97, 1, t)
+      love.graphics.rectangle('fill', 0, 0, W, H)
+    elseif x >= (1 - R) then
       curScene:draw()
-      opacity = 2 - x * 2
+      local t = 1 - (1 - x) / R
+      left = -margin + t * (W + margin * 2)
     end
-    love.graphics.setColor(1.00, 0.99, 0.93, opacity)
-    love.graphics.rectangle('fill', 0, 0, W, H)
+    love.graphics.setColor(0.93, 0.97, 1)
+    love.graphics.rectangle('fill', left + margin, 0, right - left - 2 * margin, H)
+    love.graphics.draw(snowEdge, left - margin, 0)
+    love.graphics.draw(snowEdge, right + margin, 0, 0, -1, 1)
   end
 }
 

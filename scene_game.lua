@@ -147,7 +147,7 @@ return function (best)
 
   s.release = function (x, y)
     if finOverlay ~= nil and finOverlay.release() then
-      _G['replaceScene'](_G['sceneGame'](math.max(score, best)))
+      _G['replaceScene'](_G['sceneGame'](math.max(score, best)), 'snowwind')
     end
     if selObj ~= nil and impCooldown == 0 then
       local scale = -3
