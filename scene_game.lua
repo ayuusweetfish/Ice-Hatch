@@ -1,5 +1,6 @@
 local boardPhys = require 'board_phys'
 local finishOverlay = require 'finish_overlay'
+local textButton = require 'text_button'
 local drawUtils = require 'draw_utils'
 local sin, cos = math.sin, math.cos
 
@@ -89,6 +90,17 @@ return function (seed, best, tutorialFn)
   local finOverlay = nil
   local tutorialFinishTime = nil
 
+  local tutorialSkipBtn = nil
+  if tutorial ~= nil then
+    local t = love.graphics.newText(font[28], 'Skip tutorial')
+    tutorialSkipBtn = textButton(t, function ()
+      local T = math.floor(love.timer.getTime() * 1000)
+      _G['replaceScene'](_G['sceneGame'](T, 0), 'snowwind')
+    end)
+    tutorialSkipBtn.x = W - 25 - t:getWidth() / 2
+    tutorialSkipBtn.y = 20 + t:getHeight() / 2
+  end
+
   local board_ox = W / 2
   local board_oy = H / 2
 
@@ -106,6 +118,7 @@ return function (seed, best, tutorialFn)
 
   s.press = function (x, y)
     if finOverlay ~= nil and finOverlay.press() then return end
+    if tutorialSkipBtn ~= nil and tutorialSkipBtn.press(x, y) then return end
     if tutorial ~= nil and tutorial.disabled() then return end
     selObj = nil
     local best = 1e8
@@ -131,6 +144,7 @@ return function (seed, best, tutorialFn)
 
   s.move = function (x, y)
     if finOverlay ~= nil then return end
+    if tutorialSkipBtn ~= nil and tutorialSkipBtn.move(x, y) then return end
     if selObj ~= nil then
       dragX = boardPtScale(x - board_ox, boardW / 2) - selX
       dragY = boardPtScale(y - board_oy, boardH / 2) - selY
@@ -163,6 +177,7 @@ return function (seed, best, tutorialFn)
     if tutorialFinishTime ~= nil and T >= tutorialFinishTime + 120 then
       _G['replaceScene'](tutorial.next(), 'snowwind')
     end
+    if tutorialSkipBtn ~= nil and tutorialSkipBtn.release(x, y) then return end
     if selObj ~= nil and impCooldown == 0 then
       phys.imp(selObj, dragX * -IMP_RATE, dragY * -IMP_RATE)
       impCooldown = IMP_CD
@@ -176,6 +191,7 @@ return function (seed, best, tutorialFn)
     if tutorial ~= nil then
       tutorial.update(phys)
       if tutorial.stopped() then impCooldown = 0 end
+      tutorialSkipBtn.update()
     end
     if (selObj == nil or impCooldown > 0) and
        (tutorial == nil or not tutorial.stopped())
@@ -544,7 +560,11 @@ return function (seed, best, tutorialFn)
     love.graphics.setColor(1, 1, 1)
     love.graphics.draw(textScore, 20, 20)
     -- Tutorial
-    if tutorial ~= nil then tutorial.draw() end
+    if tutorial ~= nil then
+      tutorial.draw()
+      love.graphics.setColor(0.2, 0.2, 0.2, 0.5)
+      tutorialSkipBtn.draw()
+    end
     -- Overlay
     if finOverlay ~= nil then
       finOverlay.draw()
