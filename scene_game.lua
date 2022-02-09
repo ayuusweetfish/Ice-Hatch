@@ -26,7 +26,7 @@ return function (seed, best, tutorialFn)
   local EGG_SPAWN_DUR_MIN = 720
   local EGG_SPAWN_DUR_VAR = 240
   local EGG_R = 20
-  local EGG_HOLE_AVOID = 20
+  local EGG_AVOID = 30
   local IMP_MAX = 160
   local IMP_CD = 240
   local IMP_RATE = 4
@@ -206,6 +206,8 @@ return function (seed, best, tutorialFn)
         local x, y
         local attempts = 0
         repeat
+          if attempts == 50 then EGG_AVOID = 20
+          elseif attempts == 75 then EGG_AVOID = 10 end
           x = -boardW / 2 + ADULT_R + love.math.random() * (boardW - ADULT_R * 2)
           y = -boardH / 2 + ADULT_R + love.math.random() * (boardH - ADULT_R * 2)
           local valid = not phys.queryPoint(x, y)
@@ -213,11 +215,21 @@ return function (seed, best, tutorialFn)
           if valid then
             for i = 1, #holes do
               local h = holes[i]
-              if (x - h.x)^2 + (y - h.y)^2 < (h.r + EGG_R + EGG_HOLE_AVOID)^2 then
+              if (x - h.x)^2 + (y - h.y)^2 < (h.r + EGG_R + EGG_AVOID)^2 then
                 valid = false
                 break
               end
             end
+          end
+          -- Is it near some solid?
+          if valid then
+            phys.eachSolid(function (o, sx, sy, w, h)
+              if x > sx - EGG_AVOID and x < sx + w + EGG_AVOID and
+                 y > sy - EGG_AVOID and y < sy + h + EGG_AVOID
+              then
+                valid = false
+              end
+            end)
           end
         until valid or attempts > 100
         if attempts <= 100 then
